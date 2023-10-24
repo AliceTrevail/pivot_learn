@@ -7,43 +7,76 @@
 #    http://shiny.rstudio.com/
 #
 
-library(shiny)
+
+pacman::p_load(tidyverse, shiny, shinydashboard, DT, palmerpenguins)
+
+
 
 # Define UI for application that draws a histogram
-ui <- fluidPage(
-
-    # Application title
-    titlePanel("Old Faithful Geyser Data"),
-
-    # Sidebar with a slider input for number of bins 
-    sidebarLayout(
-        sidebarPanel(
-            sliderInput("bins",
-                        "Number of bins:",
-                        min = 1,
-                        max = 50,
-                        value = 30)
-        ),
-
-        # Show a plot of the generated distribution
-        mainPanel(
-           plotOutput("distPlot")
-        )
-    )
+ui <- navbarPage("Microteach: Learn some data manipulation!",
+                 #tabPanel("Example 1"),
+                 #tabPanel("Example 2"),
+                 
+                 tabPanel(
+                   "Penguins",
+                   
+                   # Sidebar with a slider input for number of bins 
+                   sidebarLayout(
+                       sidebarPanel(
+                           actionButton("go","Fill in blanks, then Click here to pivot!"),
+                           p(""),
+                           p("Enter column names to combine"),
+                           p("*case sensitive"),
+                           textInput("penguin_col_start", "start column = ", ""),
+                           textInput("penguin_col_end", "end column = ", ""),
+                           p("Enter name for new column that will contain old column names"),
+                           textInput("penguin_names", "names_to = ", ""),
+                           p("Enter name for new column that will contain values"),
+                           textInput("penguin_values", "values_to = ", "")
+                       ),
+                       
+                       # Show a plot of the generated distribution
+                       mainPanel(
+                           tableOutput("penguin_Table"),
+                           verbatimTextOutput("penguin_code"),
+                           tableOutput("penguin_pivoted")
+                       )
+                   ))
 )
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
-
-    output$distPlot <- renderPlot({
-        # generate bins based on input$bins from ui.R
-        x    <- faithful[, 2]
-        bins <- seq(min(x), max(x), length.out = input$bins + 1)
-
-        # draw the histogram with the specified number of bins
-        hist(x, breaks = bins, col = 'darkgray', border = 'white',
-             xlab = 'Waiting time to next eruption (in mins)',
-             main = 'Histogram of waiting times')
+    output$penguin_Table <- renderTable({
+        penguin_data <- penguins %>%
+            select(species, bill_length_mm, flipper_length_mm, body_mass_g) %>%
+            group_by(species) %>%
+            slice(1)%>%
+            ungroup()
+        penguin_data
+    })
+    
+    output$penguin_code <- renderPrint({
+        cat("pivot_longer(data,", 
+            "\n\tcols = ", input$penguin_col_start, ":", input$penguin_col_end,
+            "\n\tnames_to = ", input$penguin_names,
+            "\n\tvalues_to = ", input$penguin_values, " )")
+    })
+    
+    penguin_data_pivot <- eventReactive(input$go, {
+        req(input$penguin_names)
+        penguins %>%
+            select(species, bill_length_mm, flipper_length_mm, body_mass_g) %>%
+            group_by(species) %>%
+            slice(1)%>%
+            ungroup() %>%
+            pivot_longer(.,
+                         cols = input$penguin_col_start : input$penguin_col_end,
+                         names_to = paste0(input$penguin_names),
+                         values_to = paste0(input$penguin_values))
+    }, ignoreNULL = FALSE)
+    
+    output$penguin_pivoted <- renderTable({
+        penguin_data_pivot()
     })
 }
 
