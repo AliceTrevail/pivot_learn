@@ -1,0 +1,12 @@
+name: pivot_learn
+title: pivot_learn
+username: alicetrevail
+account: alicetrevail
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 10292645
+bundleId:
+url: https://alicetrevail.shinyapps.io/pivot_learn/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE

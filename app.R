@@ -14,8 +14,29 @@ pacman::p_load(tidyverse, shiny, shinydashboard, DT, palmerpenguins)
 
 # Define UI for application that draws a histogram
 ui <- navbarPage("Microteach: Learn some data manipulation!",
-                 #tabPanel("Example 1"),
-                 #tabPanel("Example 2"),
+                 
+                 tabPanel(
+                     "Quadrats",
+                     
+                     # Sidebar with a slider input for number of bins 
+                     sidebarLayout(
+                         sidebarPanel(
+                             p("Choose new column names"),
+                             actionButton("go", "then Click here to pivot!"),
+                             p(""),
+                             p("Enter name for new column that will contain old column names"),
+                             textInput("quadrat_names", "names_to = ", ""),
+                             p("Enter name for new column that will contain values"),
+                             textInput("quadrat_values", "values_to = ", "")
+                         ),
+                         
+                         # Show a plot of the generated distribution
+                         mainPanel(
+                             tableOutput("quadrat_Table"),
+                             verbatimTextOutput("quadrat_code"),
+                             tableOutput("quadrat_pivoted")
+                         )
+                     )),
                  
                  tabPanel(
                    "Penguins",
@@ -46,6 +67,39 @@ ui <- navbarPage("Microteach: Learn some data manipulation!",
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
+    #### Quadrats #####
+    quadrat_data <- tibble(
+        Quadrat = c("Q_1", "Q_2"),
+        SpeciesA = c(10, 4),
+        SpeciesB = c(12, 3),
+        SpeciesC = c(15, 4)
+    )
+    
+    output$quadrat_Table <- renderTable({
+        quadrat_data
+    })
+    
+    output$quadrat_code <- renderPrint({
+        cat("pivot_longer(data,", 
+            "\n\tcols = SpeciesA:SpeciesC",
+            "\n\tnames_to = ", input$quadrat_names,
+            "\n\tvalues_to = ", input$quadrat_values, " )")
+    })
+    
+    quadrat_data_pivot <- eventReactive(input$go, {
+        req(input$quadrat_names)
+        quadrat_data %>%
+            pivot_longer(.,
+                         cols = SpeciesA:SpeciesC,
+                         names_to = paste0(input$quadrat_names),
+                         values_to = paste0(input$quadrat_values))
+    }, ignoreNULL = FALSE)
+    
+    output$quadrat_pivoted <- renderTable({
+        quadrat_data_pivot()
+    })
+    
+    #### Penguins #####
     output$penguin_Table <- renderTable({
         penguin_data <- penguins %>%
             select(species, bill_length_mm, flipper_length_mm, body_mass_g) %>%
