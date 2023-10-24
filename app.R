@@ -22,7 +22,7 @@ ui <- navbarPage("Microteach: Learn some data manipulation!",
                      sidebarLayout(
                          sidebarPanel(
                              p("Choose new column names"),
-                             actionButton("go", "then Click here to pivot!"),
+                             actionButton("quadrat_go", "then Click here to pivot!"),
                              p(""),
                              p("Enter name for new column that will contain old column names"),
                              textInput("quadrat_names", "names_to = ", ""),
@@ -44,7 +44,7 @@ ui <- navbarPage("Microteach: Learn some data manipulation!",
                    # Sidebar with a slider input for number of bins 
                    sidebarLayout(
                        sidebarPanel(
-                           actionButton("go","Fill in blanks, then Click here to pivot!"),
+                           actionButton("penguin_go","Fill in blanks, then Click here to pivot!"),
                            p(""),
                            p("Enter column names to combine"),
                            p("*case sensitive"),
@@ -86,7 +86,7 @@ server <- function(input, output) {
             "\n\tvalues_to = ", input$quadrat_values, " )")
     })
     
-    quadrat_data_pivot <- eventReactive(input$go, {
+    quadrat_data_pivot <- eventReactive(input$quadrat_go, {
         req(input$quadrat_names)
         quadrat_data %>%
             pivot_longer(.,
@@ -116,7 +116,7 @@ server <- function(input, output) {
             "\n\tvalues_to = ", input$penguin_values, " )")
     })
     
-    penguin_data_pivot <- eventReactive(input$go, {
+    penguin_data_pivot <- eventReactive(input$penguin_go, {
         req(input$penguin_names)
         penguins %>%
             select(species, bill_length_mm, flipper_length_mm, body_mass_g) %>%
