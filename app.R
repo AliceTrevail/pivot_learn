@@ -35,7 +35,7 @@ ui <- navbarPage("Microteach: Learn some data manipulation!",
                              tableOutput("quadrat_Table"),
                              verbatimTextOutput("quadrat_code"),
                              tableOutput("quadrat_pivoted"),
-                             plotOutput("quadrat_plot", width = "60%", height = "200px")
+                             plotOutput("quadrat_plot", width = "80%", height = "200px")
                          )
                      )),
                  
@@ -59,7 +59,8 @@ ui <- navbarPage("Microteach: Learn some data manipulation!",
                          mainPanel(
                              tableOutput("times_Table"),
                              verbatimTextOutput("times_code"),
-                             tableOutput("times_pivoted")
+                             tableOutput("times_pivoted"),
+                             plotOutput("times_plot", width = "80%", height = "200px")
                          )
                      )),
                  
@@ -86,7 +87,8 @@ ui <- navbarPage("Microteach: Learn some data manipulation!",
                        mainPanel(
                            tableOutput("penguin_Table"),
                            verbatimTextOutput("penguin_code"),
-                           tableOutput("penguin_pivoted")
+                           tableOutput("penguin_pivoted"),
+                           plotOutput("penguin_plot", height = "200px")
                        )
                    ))
 )
@@ -107,8 +109,8 @@ server <- function(input, output) {
     
     output$quadrat_code <- renderPrint({
         cat("pivot_longer(data,", 
-            "\n\tcols = SpeciesA:SpeciesC",
-            "\n\tnames_to = ", input$quadrat_names,
+            "\n\tcols = SpeciesA:SpeciesC,",
+            "\n\tnames_to = ", input$quadrat_names, ",",
             "\n\tvalues_to = ", input$quadrat_values, " )")
     })
     
@@ -150,7 +152,7 @@ server <- function(input, output) {
     times_data <- tibble(
         Athlete = c("Alice", "Olli"),
         run1 = c("28:52", "22:39"),
-        run2 = c("15:29", "22:25"),
+        run2 = c("25:29", "22:25"),
         run3 = c("27:10", "20:56")
     )
     
@@ -160,8 +162,8 @@ server <- function(input, output) {
     
     output$times_code <- renderPrint({
         cat("pivot_longer(data,", 
-            "\n\tcols = run1:run3",
-            "\n\tnames_to = ", input$times_names,
+            "\n\tcols = run1:run3,",
+            "\n\tnames_to = ", input$times_names,",",
             "\n\tvalues_to = ", input$times_values, " )")
     })
     
@@ -174,10 +176,36 @@ server <- function(input, output) {
                          values_to = paste0(input$times_values))
     }, ignoreNULL = FALSE)
     
+    times_pivot_plot <- eventReactive(input$times_go, {
+        req(input$times_names)
+        tibble(
+            Athlete = c("Alice", "Olli"),
+            run1 = lubridate::hms(c("00:28:52", "00:22:39")),
+            run2 = lubridate::hms(c("00:25:29", "00:22:25")),
+            run3 = lubridate::hms(c("00:27:10", "00:20:56"))
+        ) %>%
+            pivot_longer(.,
+                         cols = run1:run3,
+                         names_to = paste0(input$times_names),
+                         values_to = paste0(input$times_values)) %>%
+            ggplot(., 
+                   aes(x = get(paste0(input$times_names)),
+                       y = get(paste0(input$times_values)),
+                       col = Athlete, group = Athlete))+
+            geom_point()+ geom_line()+
+            scale_y_time()+
+            labs(x = paste0(input$times_names), y = paste0(input$times_values))+
+            theme_light()
+    }, ignoreNULL = FALSE)
+    
+    
     output$times_pivoted <- renderTable({
         times_data_pivot()
     })
     
+    output$times_plot <- renderPlot({
+        times_pivot_plot()
+    })
     
     
     #### Penguins #####
@@ -192,8 +220,8 @@ server <- function(input, output) {
     
     output$penguin_code <- renderPrint({
         cat("pivot_longer(data,", 
-            "\n\tcols = ", input$penguin_col_start, ":", input$penguin_col_end,
-            "\n\tnames_to = ", input$penguin_names,
+            "\n\tcols = ", input$penguin_col_start, ":", input$penguin_col_end, ",",
+            "\n\tnames_to = ", input$penguin_names, ",",
             "\n\tvalues_to = ", input$penguin_values, " )")
     })
     
@@ -210,8 +238,27 @@ server <- function(input, output) {
                          values_to = paste0(input$penguin_values))
     }, ignoreNULL = FALSE)
     
+    
+    penguin_pivot_plot <- eventReactive(input$penguin_go, {
+        req(input$penguin_names)
+        penguin_data_pivot() %>%
+            ggplot(., 
+                   aes(x = species,
+                       y = get(paste0(input$penguin_values)),
+                       fill = species))+
+            facet_wrap(.~get(paste0(input$penguin_names)), scales = "free")+
+            geom_col(position = "dodge")+
+            scale_fill_viridis_d(option = "mako", begin = 0.9, end = 0.1)+
+            labs(x = NULL, y = paste0(input$penguin_values))+
+            theme_light()
+    }, ignoreNULL = FALSE)
+    
     output$penguin_pivoted <- renderTable({
         penguin_data_pivot()
+    })
+    
+    output$penguin_plot <- renderPlot({
+        penguin_pivot_plot()
     })
 }
 
